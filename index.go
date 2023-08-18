@@ -1,3 +1,5 @@
+// This program implements a simple HTTP server that processes receipts and calculates points based on various conditions.
+
 package main
 
 import (
@@ -14,16 +16,22 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Item represents an item in a receipt.
 type Item struct {
 	ShortDescription string  `json:"shortDescription"`
 	Price            string `json:"price"`
 }
 
+// savedReceipts stores the calculated points for each receipt.
 var savedReceipts = make(map[string]int)
 
 func main() {
 	r := mux.NewRouter()
+
+	// Use the jsonMiddleware to set the content type to JSON for all responses.
 	r.Use(jsonMiddleware)
+
+	// Define routes for receipt processing and points retrieval.
 	r.HandleFunc("/receipts/process", ProcessHandler).Methods("POST")
 	r.HandleFunc("/receipts/{id:[0-9a-f-]+}/points", GetReceiptPointsHandler).Methods("GET")
 
@@ -34,6 +42,7 @@ func main() {
 	http.ListenAndServe(addr, nil)
 }
 
+// jsonMiddleware sets the Content-Type header to JSON for all responses.
 func jsonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -41,6 +50,7 @@ func jsonMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// isTimeBetween2And4 checks if the given time is between 2:00 PM and 4:00 PM.
 func isTimeBetween2And4(timeStr string) (output bool, err error) {
 	currentTime, err := time.Parse("15:04", timeStr)
 	if err != nil {
@@ -50,12 +60,13 @@ func isTimeBetween2And4(timeStr string) (output bool, err error) {
 	startTime := time.Date(0, 1, 1, 14, 0, 0, 0, time.UTC)
 	endTime := time.Date(0, 1, 1, 16, 0, 0, 0, time.UTC)
 
-	if (currentTime.After(startTime) && currentTime.Before(endTime)) {
+	if currentTime.After(startTime) && currentTime.Before(endTime) {
 		return true, nil
 	}
 	return false, nil
 }
 
+// countAlphanumericCharacters counts the number of alphanumeric characters in a string.
 func countAlphanumericCharacters(str string) int {
 	count := 0
 	for _, char := range str {
@@ -66,69 +77,61 @@ func countAlphanumericCharacters(str string) int {
 	return count
 }
 
+// isValidDateFormat checks if the provided date is in the yyyy-mm-dd format.
 func isValidDateFormat(date string) bool {
 	// Regular expression to match yyyy-mm-dd format
 	datePattern := `^\d{4}-\d{2}-\d{2}$`
 
 	match, err := regexp.MatchString(datePattern, date)
 	if err != nil {
-		
 		return false
 	}
 	return match
 }
 
+// getPoints calculates points based on various conditions.
 func getPoints(retailer string, purchaseDate string, purchaseTime string, total float64, items []Item) (pointsFinal int, err error) {
 	points := countAlphanumericCharacters(retailer)
-	
-	if total == math.Trunc(total)  {
-		
+
+	if total == math.Trunc(total) {
 		points += 50
 	}
 
 	if math.Mod(total, 0.25) == 0 {
-		
 		points += 25
 	}
 
 	numItems := len(items)
 	points += (numItems / 2) * 5
-	
 
 	for _, item := range items {
 		if len(strings.TrimSpace(item.ShortDescription))%3 == 0 {
 			pricefloatValue, err := strconv.ParseFloat(item.Price, 64)
 			if err != nil {
-				
 				return 0, err
 			}
 			points += int(math.Ceil(pricefloatValue * 0.2))
-			
 		}
 	}
 
 	day, _ := strconv.Atoi(purchaseDate[8:])
 	if day%2 == 1 {
-		
 		points += 6
 	}
 
 	between2and4, err := isTimeBetween2And4(purchaseTime)
-	
-
 	if err != nil {
-		
 		return 0, err
 	}
 
 	if between2and4 {
-		
 		points += 10
 	}
 
 	return points, nil
 }
 
+// ProcessHandler processes the receipt and calculates points.
 func ProcessHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Retailer      string  `json:"retailer"`
@@ -144,14 +147,12 @@ func ProcessHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
-
-	if (input.Retailer == "" || input.PurchaseDate == "" || input.PurchaseTime == "" || input.Total == "" || input.Items == nil) {
+	if input.Retailer == "" || input.PurchaseDate == "" || input.PurchaseTime == "" || input.Total == "" || input.Items == nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	if (!isValidDateFormat(input.PurchaseDate)) {
+	if !isValidDateFormat(input.PurchaseDate) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
@@ -163,20 +164,18 @@ func ProcessHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, item := range input.Items {
-		if (item.ShortDescription == "" || item.Price == "") {
+		if item.ShortDescription == "" || item.Price == "" {
 			http.Error(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
 		_, err2 := strconv.ParseFloat(item.Price, 64)
-		
 		if err2 != nil {
 			http.Error(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
 	}
 
-
-	floatValue, err := strconv.ParseFloat( input.Total, 64)
+	floatValue, err := strconv.ParseFloat(input.Total, 64)
 	if err != nil {
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
 		return
@@ -190,13 +189,12 @@ func ProcessHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	savedReceipts[id] = points
 
-	
-
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"id": id,
 	})
 }
 
+// GetReceiptPointsHandler retrieves the calculated points for a given receipt ID.
 func GetReceiptPointsHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]

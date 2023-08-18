@@ -3,13 +3,12 @@ FROM golang:1.21-alpine
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+COPY . .
+
 RUN go mod download
 
-COPY *.go ./
+RUN CGO_ENABLED=0 GOOS=linux go build -o receipt-points-calculator .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /reward-app
+EXPOSE 4000
 
-EXPOSE 8080
-
-CMD ["/reward-app"]
+CMD ["./receipt-points-calculator"]
