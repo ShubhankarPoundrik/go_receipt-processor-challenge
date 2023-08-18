@@ -156,8 +156,20 @@ func ProcessHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, err2 := strconv.ParseFloat(input.Total, 64)
+	if err2 != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
 	for _, item := range input.Items {
 		if (item.ShortDescription == "" || item.Price == "") {
+			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			return
+		}
+		val, err2 := strconv.ParseFloat(item.Price, 64)
+		fmt.Println(("val: "), val)
+		if err2 != nil {
 			http.Error(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
