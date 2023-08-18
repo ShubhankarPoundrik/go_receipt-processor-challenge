@@ -16,6 +16,19 @@ import (
 	"github.com/gorilla/mux"
 )
 
+
+type BlankInputError struct{}
+
+func (e BlankInputError) Error() string {
+	return "blank input"
+}
+
+type InvalidFormatError struct{}
+
+func (e InvalidFormatError) Error() string {
+	return "invalid format"
+}
+
 // Item represents an item in a receipt.
 type Item struct {
 	ShortDescription string  `json:"shortDescription"`
@@ -78,16 +91,14 @@ func countAlphanumericCharacters(str string) int {
 }
 
 // isValidDateFormat checks if the provided date is in the yyyy-mm-dd format.
-func isValidDateFormat(date string) bool {
+func isValidDateFormat(date string) (match bool, err error) {
 	// Regular expression to match yyyy-mm-dd format
 	datePattern := `^\d{4}-\d{2}-\d{2}$`
 
-	match, err := regexp.MatchString(datePattern, date)
-	if err != nil {
-		return false
-	}
-	return match
+	return regexp.MatchString(datePattern, date)
+
 }
+
 
 // getPoints calculates points based on various conditions.
 func getPoints(retailer string, purchaseDate string, purchaseTime string, total_str string, items []Item) (pointsFinal int, err error) {
@@ -99,20 +110,23 @@ func getPoints(retailer string, purchaseDate string, purchaseTime string, total_
 	// tests
 
 	if retailer == "" || purchaseDate == "" || purchaseTime == "" || total_str == "" || items == nil {
-		return 0, err
+		return 0, BlankInputError{}
 	}
-
-	if !isValidDateFormat(purchaseDate) {
-		return 0, err
+	match, err2 := isValidDateFormat(purchaseDate)
+	if err2 != nil {
+		return 0, err2
+	}
+	if !match {
+		return 0, InvalidFormatError{}
 	}
 
 	for _, item := range items {
 		if item.ShortDescription == "" || item.Price == "" {
-			return 0, err
+			return 0, InvalidFormatError{}
 		}
 		_, err2 := strconv.ParseFloat(item.Price, 64)
 		if err2 != nil {
-			return 0, err
+			return 0, InvalidFormatError{}
 		}
 	}
 
