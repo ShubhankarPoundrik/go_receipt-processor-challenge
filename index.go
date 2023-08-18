@@ -72,7 +72,7 @@ func isValidDateFormat(date string) bool {
 
 	match, err := regexp.MatchString(datePattern, date)
 	if err != nil {
-		fmt.Println("Error:", err)
+		
 		return false
 	}
 	return match
@@ -80,49 +80,49 @@ func isValidDateFormat(date string) bool {
 
 func getPoints(retailer string, purchaseDate string, purchaseTime string, total float64, items []Item) (pointsFinal int, err error) {
 	points := countAlphanumericCharacters(retailer)
-	fmt.Println("added points for retailer: ", points)
+	
 	if total == math.Trunc(total)  {
-		fmt.Println("adding 50 points for whole number ")
+		
 		points += 50
 	}
 
 	if math.Mod(total, 0.25) == 0 {
-		fmt.Println("adding 25 points for quarter ")
+		
 		points += 25
 	}
 
 	numItems := len(items)
 	points += (numItems / 2) * 5
-	fmt.Println("adding 5 points for every 2 items: ", (numItems / 2) * 5)
+	
 
 	for _, item := range items {
 		if len(strings.TrimSpace(item.ShortDescription))%3 == 0 {
 			pricefloatValue, err := strconv.ParseFloat(item.Price, 64)
 			if err != nil {
-				fmt.Println("Error:", err)
+				
 				return 0, err
 			}
 			points += int(math.Ceil(pricefloatValue * 0.2))
-			fmt.Println("adding 20 p of price for item: ", item.ShortDescription, " which is ", int(pricefloatValue * 0.2))
+			
 		}
 	}
 
 	day, _ := strconv.Atoi(purchaseDate[8:])
 	if day%2 == 1 {
-		fmt.Println("adding 6 points for odd day ")
+		
 		points += 6
 	}
 
 	between2and4, err := isTimeBetween2And4(purchaseTime)
-	fmt.Println("isTimeBetween2And4: ", between2and4)
+	
 
 	if err != nil {
-		fmt.Println("Error: Invalid time format")
+		
 		return 0, err
 	}
 
 	if between2and4 {
-		fmt.Println("adding 10 points for time between 2 and 4 ")
+		
 		points += 10
 	}
 
@@ -144,7 +144,7 @@ func ProcessHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Input: ", input)
+	
 
 	if (input.Retailer == "" || input.PurchaseDate == "" || input.PurchaseTime == "" || input.Total == "" || input.Items == nil) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -167,8 +167,8 @@ func ProcessHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
-		val, err2 := strconv.ParseFloat(item.Price, 64)
-		fmt.Println(("val: "), val)
+		_, err2 := strconv.ParseFloat(item.Price, 64)
+		
 		if err2 != nil {
 			http.Error(w, "Invalid request payload", http.StatusBadRequest)
 			return
@@ -190,7 +190,7 @@ func ProcessHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	savedReceipts[id] = points
 
-	fmt.Println("Points:", points)
+	
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"id": id,
