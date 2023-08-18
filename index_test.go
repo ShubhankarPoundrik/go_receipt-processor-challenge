@@ -79,7 +79,7 @@ func TestIsValidDateFormat(t *testing.T) {
 	}
 }
 
-func TestGetPointsWithValidInput1(t *testing.T) {
+func TestGetPoints(t *testing.T) {
 	input := struct {
 		Retailer      string  `json:"retailer"`
 		PurchaseDate  string  `json:"purchaseDate"`
@@ -120,11 +120,9 @@ func TestGetPointsWithValidInput1(t *testing.T) {
 	if points != expectedPoints {
 		t.Errorf("Expected points to be %d, but got %d", expectedPoints, points)
 	}
-}
 
-func TestGetPointsWithInvalidTotal(t *testing.T) {
     // Total is in wrong format
-	input := struct {
+	input = struct {
 		Retailer      string  `json:"retailer"`
 		PurchaseDate  string  `json:"purchaseDate"`
 		PurchaseTime  string  `json:"purchaseTime"`
@@ -156,7 +154,7 @@ func TestGetPointsWithInvalidTotal(t *testing.T) {
 	}
 
     
-	_, err := getPoints(input.Retailer, input.PurchaseDate, input.PurchaseTime, input.Total, input.Items)
+	_, err = getPoints(input.Retailer, input.PurchaseDate, input.PurchaseTime, input.Total, input.Items)
 	if err == nil {
 		t.Errorf("Expected an error, but got nil")
 	}
