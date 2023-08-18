@@ -1,4 +1,4 @@
-# STEPS
+# How to run
 
 ## Clone on local machine
 
