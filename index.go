@@ -90,8 +90,34 @@ func isValidDateFormat(date string) bool {
 }
 
 // getPoints calculates points based on various conditions.
-func getPoints(retailer string, purchaseDate string, purchaseTime string, total float64, items []Item) (pointsFinal int, err error) {
+func getPoints(retailer string, purchaseDate string, purchaseTime string, total_str string, items []Item) (pointsFinal int, err error) {
 	points := countAlphanumericCharacters(retailer)
+	total, err := strconv.ParseFloat(total_str, 64)
+	if err != nil {
+		return 0, err
+	}
+	// tests
+
+	if retailer == "" || purchaseDate == "" || purchaseTime == "" || total_str == "" || items == nil {
+		return 0, err
+	}
+
+	if !isValidDateFormat(purchaseDate) {
+		return 0, err
+	}
+
+	for _, item := range items {
+		if item.ShortDescription == "" || item.Price == "" {
+			return 0, err
+		}
+		_, err2 := strconv.ParseFloat(item.Price, 64)
+		if err2 != nil {
+			return 0, err
+		}
+	}
+
+	///////////////
+
 
 	if total == math.Trunc(total) {
 		points += 50
@@ -147,42 +173,8 @@ func ProcessHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.Retailer == "" || input.PurchaseDate == "" || input.PurchaseTime == "" || input.Total == "" || input.Items == nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	if !isValidDateFormat(input.PurchaseDate) {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	_, err2 := strconv.ParseFloat(input.Total, 64)
-	if err2 != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	for _, item := range input.Items {
-		if item.ShortDescription == "" || item.Price == "" {
-			http.Error(w, "Invalid request payload", http.StatusBadRequest)
-			return
-		}
-		_, err2 := strconv.ParseFloat(item.Price, 64)
-		if err2 != nil {
-			http.Error(w, "Invalid request payload", http.StatusBadRequest)
-			return
-		}
-	}
-
-	floatValue, err := strconv.ParseFloat(input.Total, 64)
-	if err != nil {
-		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
-		return
-	}
-
 	id := uuid.New().String()
-	points, err := getPoints(input.Retailer, input.PurchaseDate, input.PurchaseTime, floatValue, input.Items)
+	points, err := getPoints(input.Retailer, input.PurchaseDate, input.PurchaseTime, input.Total, input.Items)
 	if err != nil {
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
 		return
